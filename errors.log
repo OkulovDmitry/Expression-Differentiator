@@ -1,0 +1,98 @@
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 4): (nil (nil ((nil nil "ERROR") nil "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 4): (nil (nil ((nil nil "ERROR") nil "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 30 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
+
+ASSERT FAILED: e == TREE_OK
+  at src/akinator.c:15 in remove_ok()
+ msg: remove 22 failed, code=3
+ --------------------------------- dump ---------------------------------
+tree(size = 5): (nil (nil ((nil nil "ERROR") (nil nil "ERROR") "ERROR") "ERROR") "ERROR")
+ ------------------------------- end dump -------------------------------
