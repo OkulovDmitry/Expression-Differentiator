@@ -41,10 +41,10 @@ void print_data(FILE* o, const Node* n, const VarTable* table) {
             fprintf(o, "%c", n->data.char_data);
             break;
         case NUM_TYPE:
-            fprintf(o, "%lf", n->data.double_data);
+            fprintf(o, "%g", n->data.num_data);
             break;
         case VAR_TYPE:
-            fprintf(o, "%s", table->vars[n->data.var_data].name ? table->vars[n->data.var_data].name : "(null)");
+            fprintf(o, "%s", (table && n->data.var_data < table->size) ? table->vars[n->data.var_data].name : "(null)");
             break;
         case OP_TYPE:
             printf_op_data(o, "%s", op_info[n->data.op_data].operation_ord);
