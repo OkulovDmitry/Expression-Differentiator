@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdio.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 
 #define TREE_GV_MODE "ARCS"  // тип используемых стрелок в дампе дерева
 
@@ -31,8 +31,8 @@ typedef enum {
 } NodeType;
 
 typedef struct {
-    char name[MAX_VAR_LEN];    // имя переменной - указатель на позицию начала в едином буфере
-    double value;  // в будущем для построения графиков и вычисления производной в точке
+    char name[MAX_VAR_LEN];  // имя переменной - указатель на позицию начала в едином буфере
+    double value;            // в будущем для построения графиков и вычисления производной в точке
 } Variable;
 
 typedef struct {
@@ -57,19 +57,11 @@ typedef struct OpInfo {
     char* operation_ord;
     char* operation_tex;
     int priority;
-    bool is_unary;
+    int min_children;  // 1 для унарных и 2 для бинарных
+    int max_children;  // 1 для sin условно и 2 для бинарных и 2 для +/-
 } OpInfo;
 
-const OpInfo op_info[NUMBER_OF_OPERATIONS] = {
-    {.operation_ord = "+", .operation_tex = "+", .priority = 1, .is_unary = true},
-    {.operation_ord = "-", .operation_tex = "-", .priority = 1, .is_unary = true},
-    {.operation_ord = "*", .operation_tex = "\cdot", .priority = 2, .is_unary = true},
-    {.operation_ord = "/", .operation_tex = "/", .priority = 2, .is_unary = true},
-    {.operation_ord = "sin", .operation_tex = "\sin", .priority = 4, .is_unary = false},
-    {.operation_ord = "cos", .operation_tex = "\cos", .priority = 4, .is_unary = false},
-    {.operation_ord = "ln", .operation_tex = "\ln", .priority = 4, .is_unary = false},
-    {.operation_ord = "^", .operation_tex = "^", .priority = 3, .is_unary = false},
-};
+extern const OpInfo op_info[NUMBER_OF_OPERATIONS];
 
 typedef union NodeElem {
     // обычный элемент дерева

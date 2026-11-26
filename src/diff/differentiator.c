@@ -33,17 +33,6 @@ static bool var_name_ok(const char* name) {
     return true;
 }
 
-/* ---- Заполнение части таблицы меток POISON ---- */
-void fill_vartable_poison(VarTable* table, size_t from) {
-    ASSERT_MSG(table != NULL, strerror(NULL_PTR));
-    ASSERT_MSG(from >= 0, strerror(TREE_VARS_CORRYPTED));
-
-    for (size_t i = from; i < table->capacity; i++) {
-        snprintf((table->vars[i]).name, (size_t)(MAX_VAR_LEN), "POISON%zu", i);
-        (table->vars[i]).value = VAR_POISON;
-    }
-}
-
 static tree_err_t resize_up_var_table(VarTable* table) {
     ASSERT_MSG(table != NULL, strerror(NULL_PTR));
 
@@ -140,7 +129,7 @@ static tree_err_t diff_nodes_take(char** pos, char* word, Tree* t, Node* node, c
 
         if (is_unary_operation(word)) {  // создание нового узла с правым ребенком и рекурсиный спуск в правое поддерево
             NodeElem elem_data;
-            elem_data.op_data
+            
         } else if (ensure_var_exists(word, t->var_table, &var_pos)) {  // создать узел переменную без детей
             NodeElem elem_data;
             elem_data.var_data = var_pos;

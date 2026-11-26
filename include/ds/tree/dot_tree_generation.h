@@ -2,9 +2,9 @@
 
 #include "tree_errors.h"
 
-#include <stdio.h>
+#include "tree_fwd.h"
 
-typedef struct Node Node;
+#include <stdio.h>
 
 #define GV_USED_FILL "#2F5D8A"  // в data
 #define GV_USED_BORDER "#6CA6E0"

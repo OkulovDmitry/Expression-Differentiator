@@ -1,11 +1,10 @@
 #pragma once
 
+#include "tree_fwd.h"
 #include "tree_errors.h"
 
 #define GV_BG "#1B1F24"         // фон
 #define GV_TEXT "#E6EDF3"       // текст
-
-typedef struct Tree Tree;
 
 /* ---- Инициализация html файла с истроией дерева ----*/
 void tree_log_init();

@@ -1,7 +1,6 @@
 #pragma once
 
-typedef struct Node Node;
-typedef struct Tree Tree;
+#include "tree_fwd.h"
 
 /* ---- Дополнительные функции ---- */
 Node* tree_min(Node* n);                          // поиск минимального узла (самый левый)

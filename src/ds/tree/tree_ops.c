@@ -2,6 +2,17 @@
 
 #include "tree_defs.h"
 
+const OpInfo op_info[NUMBER_OF_OPERATIONS] = {
+    {.operation_ord = "+", .operation_tex = "+", .priority = 1, .min_children = 1, .max_children = 2},
+    {.operation_ord = "-", .operation_tex = "-", .priority = 1, .min_children = 1, .max_children = 2},
+    {.operation_ord = "*", .operation_tex = "\\cdot", .priority = 2, .min_children = 2, .max_children = 2},
+    {.operation_ord = "/", .operation_tex = "/", .priority = 2, .min_children = 2, .max_children = 2},
+    {.operation_ord = "sin", .operation_tex = "\\sin", .priority = 4, .min_children = 1, .max_children = 1},
+    {.operation_ord = "cos", .operation_tex = "\\cos", .priority = 4, .min_children = 1, .max_children = 1},
+    {.operation_ord = "ln", .operation_tex = "\\ln", .priority = 4, .min_children = 1, .max_children = 1},
+    {.operation_ord = "^", .operation_tex = "^", .priority = 3, .min_children = 2, .max_children = 2},
+};
+
 /* заменяет поддерево u поддеревом v */
 void transplant(Tree* t, Node* u, Node* v) {
     if (!u->head)

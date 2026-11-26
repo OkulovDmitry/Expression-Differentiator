@@ -2,6 +2,10 @@
 
 #include "tree_errors.h"
 
+#include "tree_fwd.h"
+
+#include <stdio.h>
+#include <stddef.h>
 #include <stdio.h>
 
 /* -------------------- Верификаторы узла и дерева ------------------- */

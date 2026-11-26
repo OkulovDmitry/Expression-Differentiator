@@ -19,11 +19,11 @@
 /* ========================================================================================================================= */
 
 /* ---- Разрушение узла ---- */
-static void destroy_node(Node* n) {
+void tree_node_destroy(Node* n) {
     if (!n) return;
     destroy_node(n->left);
     destroy_node(n->right);
-    n = NULL;
+    free(n);
 }
 
 /* ---- Заполнение буфера '\0' ---- */
@@ -31,19 +31,48 @@ void fill_poison(Tree* t, size_t from) {
     for (size_t i = from; i < t->buf_cap; i++) t->buffer[i] = '\0';
 }
 
+/* ---- Заполнение части таблицы меток POISON ---- */
+void fill_vartable_poison(VarTable* table, size_t from) {
+    ASSERT_MSG(table != NULL, strerror(NULL_PTR));
+    ASSERT_MSG(from >= 0, strerror(TREE_VARS_CORRYPTED));
+
+    for (size_t i = from; i < table->capacity; i++) {
+        snprintf((table->vars[i]).name, (size_t)(MAX_VAR_LEN), "POISON%zu", i);
+        (table->vars[i]).value = VAR_POISON;
+    }
+}
+
 /* ---- Инициализация дерева ---- */
 void tree_init(Tree* t TREE_PLACE_IN) {
-    ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
+    if (!t) return TREE_NULL_PTR;
 
     t->root     = NULL;
     t->size     = 0;
     t->buf_used = 0;
     t->buf_cap  = 800;
     t->buffer   = calloc(1, t->buf_cap);
+    if (!t->buffer) return TREE_NO_MEM;
     fill_poison(t, t->buf_used);
+
+    t->var_table = calloc(1, sizeof(VarTable));
+    if (!t->var_table) {
+        free(t->buffer);
+        t->buffer = NULL;
+        return TREE_NO_MEM;
+    }
+
     t->var_table->capacity = MAX_VARS;
     t->var_table->size     = 0;
     t->var_table->vars     = calloc(MAX_VARS, sizeof(Variable));
+
+    if (!t->var_table->vars) {
+        free(t->var_table);
+        t->var_table = NULL;
+        free(t->buffer);
+        t->buffer = NULL;
+        return TREE_NO_MEM;
+    }
+    fill_vartable_poison(t->var_table, 0);
 
 #ifdef TREE_DEBUG
     t->name     = name;
@@ -52,24 +81,29 @@ void tree_init(Tree* t TREE_PLACE_IN) {
     t->line     = line;
 #endif
 
-    tree_err_t err = tree_verify(t);
-    ASSERT_MSG(err == TREE_OK, tree_strerror(err));
+    return tree_verify(t);
 }
 
 /* ---- Освобождает все узлы - обход снизу вверх ---- */
 void tree_destroy(Tree* t) {
-    ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
-
-    destroy_node(t->root);
+    if (!t) return;
+    tree_node_destroy(t->root);
     t->root = NULL;
     t->size = 0;
     free(t->buffer);
-    free(t->var_table);
+    t->buffer   = NULL;
+    t->buf_cap  = 0;
+    t->buf_used = 0;
+    if (t->var_table) {
+        free(t->var_table->vars);
+        free(t->var_table);
+        t->var_table = NULL;
+    }
 #ifdef TREE_DEBUG
     t->file     = NULL;
     t->function = NULL;
     t->line     = NULL;
-    t->name     = NULL;
+    t->name     = 0;
 #endif
 }
 
@@ -91,16 +125,16 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
     if (!n) return TREE_NO_MEM;
 
     if (type == STRING_TYPE) {
-        while (t->buf_used + sizeof(NodeElem) > t->buf_cap) {
+        const char* src = data.string_data ? data.string_data : "POISON";
+        size_t need     = strlen(src) + 1;
+        while (t->buf_used + need > t->buf_cap) {
             tree_err_t err = resize_up(t);
-            if (err != TREE_OK) {
-                return err;
-            }
+            if (err != TREE_OK) return err;
         }
-
-        char* buf_end = t->buffer + t->buf_used + 1;
-        data.string_data ? memcpy(buf_end, data.string_data, sizeof(NodeElem)) : memcpy(buf_end, "POISON", sizeof(NodeElem));
-        data.string_data = buf_end;
+        char* dst = t->buffer + t->buf_used;
+        memcpy(dst, src, need);
+        t->buf_used += need;
+        data.string_data = dst;
     }
 
     if (type == VAR_TYPE) {

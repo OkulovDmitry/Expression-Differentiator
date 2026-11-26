@@ -1,7 +1,6 @@
 #pragma once
 
-typedef struct Tree Tree;
-typedef struct Node Node;
+#include "tree_fwd.h"
 
 /* ----------------------------- обработка ошибок ---------------------------------*/
 
