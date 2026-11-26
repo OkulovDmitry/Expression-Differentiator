@@ -3,6 +3,7 @@
 #include "tree_defs.h"
 #include "tree_dump.h"
 #include "tree_validate.h"
+#include "tree_traverse.h"
 
 /* ========================================================================================================================= */
 /* ========================================================================================================================= */
@@ -129,7 +130,7 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
         size_t need     = strlen(src) + 1;
         while (t->buf_used + need > t->buf_cap) {
             tree_err_t err = resize_up(t);
-            if (err != TREE_OK) return err;
+            if (err != TREE_OK) { free(n); return err; }
         }
         char* dst = t->buffer + t->buf_used;
         memcpy(dst, src, need);
@@ -138,23 +139,19 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
     }
 
     if (type == VAR_TYPE) {
-        while (t->buf_used + sizeof(NodeElem) > t->buf_cap) {
-            tree_err_t err = resize_up(t);
-            if (err != TREE_OK) {
-                return err;
-            }
-        }
-
-        if (t->var_table->size == t->var_table) {
+        if (t->var_table->size >= t->var_table->capacity) {
+            free(n);
             return TREE_VARS_OVERFLOW;
         }
 
-        if (data.var_data > t->var_table->capacity || data.var_data < 0) {
+        if (data.var_data >= t->var_table->size) {
+            free(n);
             return TREE_VAR_WRONG_FORMAT;
         }
     }
 
-    if (type == OP_TYPE && (data.op_data < 0 || data.op_data > NUMBER_OF_TYPES)) {
+    if (type == OP_TYPE && (data.op_data < 0 || data.op_data >= NUMBER_OF_OPERATIONS)) {
+        free(n);
         return TREE_WRONG_OP_CODE;
     }
 
@@ -216,8 +213,8 @@ Node* tree_find(const Tree* t, int key) {
 
 /* ---- Удаление узла ---- */
 tree_err_t tree_remove_node(Tree* t, Node* n) {
-    ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
-    ASSERT_MSG(n != NULL, tree_strerror(NODE_NULL_PTR));
+    if (!t || !n) return TREE_NULL_PTR;
+    
     if (!n->left)
         transplant(t, n, n->right); /* нет детей или только правый */
     else if (!n->right)

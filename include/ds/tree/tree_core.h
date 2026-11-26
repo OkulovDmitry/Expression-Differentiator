@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tree_fwd.h"
 #include "tree_errors.h"
+#include "tree_fwd.h"
 
 /* ------------------------- Режимы компиляции ----------------------------*/
 
@@ -21,9 +21,9 @@
 tree_err_t tree_init(Tree* t TREE_PLACE_IN);
 #define TREE_INIT(t) tree_init((t)TREE_PLACE_OUT(t))
 void tree_destroy(Tree* t);
-void       tree_node_destroy(Node* n);
+void tree_node_destroy(Node* n);
 tree_err_t resize_up(Tree* t);
-Node*      tree_min(Node* n);
+Node* tree_min(Node* n);
 
 /* ---- вставка/удаление узла за O(n) ---- */
 tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data);
