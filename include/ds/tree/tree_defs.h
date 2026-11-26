@@ -1,5 +1,11 @@
 #pragma once
 
+/*
+ * ВАЖНО: указатели data.string_data валидны только до следующего вызова
+ * tree_insert (который может вызвать realloc и сдвинуть буфер).
+ * Если нужно хранить строку долго — делайте strdup.
+ */
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>

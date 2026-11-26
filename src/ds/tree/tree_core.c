@@ -170,17 +170,32 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
     return TREE_OK;
 }
 
+static void update_string_ptrs(Node* n, ptrdiff_t delta) {
+    if (!n) return;
+    if (n->type == STRING_TYPE && n->data.string_data) {
+        n->data.string_data += delta;
+    }
+    update_string_ptrs(n->left, delta);
+    update_string_ptrs(n->right, delta);
+}
+
 tree_err_t resize_up(Tree* t) {
     ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
 
     size_t new_cap = 2 * t->buf_cap + 1;
     if (new_cap > TREE_MAX_BUF_CAP) return TREE_NO_MEM;
 
-    char* temp = realloc(t->buffer, new_cap);
-    if (temp == NULL) return TREE_NO_MEM;
+    char* old_buffer = t->buffer;
+    char* temp       = realloc(t->buffer, new_cap);
+    if (!temp) return TREE_NO_MEM;
 
     t->buffer  = temp;
     t->buf_cap = new_cap;
+
+    ptrdiff_t delta = t->buffer - old_buffer;
+    if (delta != 0) {
+        update_string_ptrs(t->root, delta);
+    }  // тут я перевешиваю все указатели на строки
 
     fill_poison(t, t->buf_used);
 
