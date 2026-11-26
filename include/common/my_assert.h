@@ -1,5 +1,4 @@
-#ifndef MY_ASSERT_H
-#define MY_ASSERT_H
+#pragma once
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -65,5 +64,3 @@ _Noreturn void assert_fail(const char* file, int line,
 
 /* ---- проверка на этапе компиляции ---- */
 #define STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
-
-#endif /* MY_ASSERT_H */
