@@ -10,6 +10,20 @@
 #include <stddef.h>
 #include <stdio.h>
 
+/* ------------------------- Режимы компиляции ----------------------------*/
+
+#define TREE_DEBUG
+
+#ifdef TREE_DEBUG
+#    define TREE_PLACE_IN , const char *name, const char *function, const char *file, int line
+#    define TREE_PLACE_OUT(l) , #l, __func__, __FILE__, __LINE__
+#else
+#    define TREE_PLACE_IN
+#    define TREE_PLACE_OUT(l)
+#endif
+
+/* ------------------------------------------------------------------------- */
+
 #define TREE_GV_MODE "ARCS"  // тип используемых стрелок в дампе дерева
 
 #define MAX_VARS 200

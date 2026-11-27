@@ -4,20 +4,7 @@
 
 #include "tree_errors.h"
 #include "tree_fwd.h"
-
-/* ------------------------- Режимы компиляции ----------------------------*/
-
-#define TREE_DEBUG
-
-#ifdef TREE_DEBUG
-#    define TREE_PLACE_IN , const char *name, const char *function, const char *file, int line
-#    define TREE_PLACE_OUT(l) , #l, __func__, __FILE__, __LINE__
-#else
-#    define TREE_PLACE_IN
-#    define TREE_PLACE_OUT(l)
-#endif
-
-/* ------------------------------------------------------------------------- */
+#include "tree_defs.h"
 
 /* ---- создание и удаление ---- */
 tree_err_t tree_init(Tree* t TREE_PLACE_IN);
@@ -29,6 +16,7 @@ Node* tree_min(Node* n);
 
 /* ---- вставка/удаление узла за O(n) ---- */
 tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data, Node** out_node);
+tree_err_t tree_alloc_node(Tree* t, NodeType type, NodeElem data, Node** out_node);
 Node* tree_find(const Tree* t, int key);
 tree_err_t tree_remove_node(Tree* t, Node* n);
 tree_err_t tree_remove(Tree* t, int key);

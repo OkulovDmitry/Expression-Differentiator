@@ -190,6 +190,34 @@ static void update_string_ptrs(Node* n, ptrdiff_t delta) {
     update_string_ptrs(n->right, delta);
 }
 
+tree_err_t tree_alloc_node(Tree* t, NodeType type, NodeElem data, Node** out_node) {
+    if (!t || !out_node) return TREE_NULL_PTR;
+    if (type >= NUMBER_OF_TYPES) return TREE_WRONG_NODE_TYPE;
+
+    // как в tree_insert но без поиска BST поска
+    if (type == VAR_TYPE) {
+        if (data.var_data >= t->var_table->size) return TREE_VAR_WRONG_FORMAT;
+    }
+    if (type == OP_TYPE) {
+        if ((int)data.op_data < 0 || data.op_data >= NUMBER_OF_OPERATIONS)
+            return TREE_WRONG_OP_CODE;
+    }
+
+    Node* n = calloc(1, sizeof(Node));
+    if (!n) return TREE_NO_MEM;
+
+    n->key   = 0;  // ключ назначит tree_renumber позже
+    n->type  = type;
+    n->data  = data;
+    n->left  = NULL;
+    n->right = NULL;
+    n->head  = NULL;
+
+    t->size++;  // узел учтён в дереве
+    *out_node = n;
+    return TREE_OK;
+}
+
 tree_err_t resize_up(Tree* t) {
     ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
 

@@ -18,11 +18,12 @@ int main() {
     err = TREE_INIT(&t_first_diff);
     ASSERT_MSG(err == TREE_OK, tree_strerror(err));
 
+    assert_set_hook(tree_dump_hook, &t_first_diff);
     err = tree_diff(&t, 0, &t_first_diff);
     ASSERT_MSG(err == TREE_OK, tree_strerror(err));
 
     tree_dump_graph_at("DERIVATIVE", &t_first_diff, __FILE__, __LINE__, "main");
-    
+
     tree_destroy(&t);
     tree_destroy(&t_first_diff);
 

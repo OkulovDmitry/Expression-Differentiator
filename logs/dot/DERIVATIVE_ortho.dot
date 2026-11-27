@@ -2,12 +2,28 @@ digraph tree {
   graph [dpi=110, bgcolor="#1B1F24", splines=true, pad=0.5, nodesep=1.6, ranksep=1.5];
   node  [shape=rectangle, style="rounded,filled", fontcolor="#E6EDF3", fontsize=22, width=6.2, height=2.5, fixedsize=true, penwidth=3];
   edge  [penwidth=2, arrowsize=1.0];
-  cell0 [fillcolor="#5e4592", color="#B392F0", label="ROOT\n\key: 0\ndata: 0\nhead: NO_HEAD\nleft_child: NO_LEFT_CHILD\nright_child: NO_RIGHT_CHILD"];
-  cell1 [style="invis", width=1, fixedsize=true];
+  cell0 [fillcolor="#5e4592", color="#B392F0", label="ROOT\n\key: 1\ndata: +\nhead: NO_HEAD\nleft_child: 0\nright_child: 2"];
+  cell1 [fillcolor="#2F5D8A", color="#6CA6E0", label="key: 0[0]\n\n1\nhead: 1\nleft_child: NO_LEFT_CHILD\nright_child: NO_RIGHT_CHILD"];
   cell2 [style="invis", width=1, fixedsize=true];
   cell3 [style="invis", width=1, fixedsize=true];
-  cell0:s -> cell1:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
-  cell0:s -> cell2:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
-  cell0:s -> cell3:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
-  { rank=TB; cell0; }
+  cell4 [style="invis", width=1, fixedsize=true];
+  cell5 [style="invis", width=1, fixedsize=true];
+  cell6 [style="invis", width=1, fixedsize=true];
+  cell7 [style="invis", width=1, fixedsize=true];
+  cell8 [fillcolor="#2F5D8A", color="#6CA6E0", label="key: 2[0]\n\n0\nhead: 1\nleft_child: NO_LEFT_CHILD\nright_child: NO_RIGHT_CHILD"];
+  cell9 [style="invis", width=1, fixedsize=true];
+  cell10 [style="invis", width=1, fixedsize=true];
+  cell11 [style="invis", width=1, fixedsize=true];
+  cell1:s -> cell2:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell1:s -> cell3:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell1:s -> cell4:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:w -> cell1:n [color="#187a06", headclip=true];
+  cell0:s -> cell5:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:s -> cell6:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:s -> cell7:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell8:s -> cell9:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell8:s -> cell10:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell8:s -> cell11:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:e -> cell8:n [color="#F0883E:#F0883E", headclip=true];
+  { rank=TB; cell0; cell1; cell2; }
 }

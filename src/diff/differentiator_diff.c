@@ -10,7 +10,7 @@
 
 static Node* new_num(Tree* t, double val, tree_err_t* err) {  // создать числовой узел
     Node* n = NULL;
-    *err    = tree_insert(t, 0, NUM_TYPE, (NodeElem){.num_data = val}, &n);
+    *err    = tree_alloc_node(t, NUM_TYPE, (NodeElem){.num_data = val}, &n);
     if (err) return NULL;
     return n;
 }
@@ -26,7 +26,7 @@ static Node* clone_into(const Node* src, Tree* dst, tree_err_t* err) {  // кл�
     NodeElem d = src->data;
 
     Node* n = NULL;
-    *err    = tree_insert(dst, 0, src->type, d, &n);
+    *err    = tree_alloc_node(dst, src->type, d, &n);
     if (*err) return NULL;
     n->left = left;
     if (left) left->head = n;
@@ -53,7 +53,7 @@ static Node* diff_node(const Node* n, Tree* result, size_t var_idx, tree_err_t* 
         case NUM_TYPE: {
             NodeElem d = {.num_data = 0.0};
             Node* n    = NULL;
-            *err       = tree_insert(result, 0, NUM_TYPE, d, &n);
+            *err       = tree_alloc_node(result, NUM_TYPE, d, &n);
             if (*err != TREE_OK) return NULL;
             return n;
         }
@@ -62,15 +62,57 @@ static Node* diff_node(const Node* n, Tree* result, size_t var_idx, tree_err_t* 
             double val = (n->data.var_data == var_idx) ? 1.0 : 0.0;
             NodeElem d = {.num_data = val};
             Node* n    = NULL;
-            *err       = tree_insert(result, 0, NUM_TYPE, d, &n);
+            *err       = tree_alloc_node(result, NUM_TYPE, d, &n);
             return n;  // TODO: dsl ка нужна
         }
 
         case OP_TYPE: {
-            // Здесь будут правила для +, -, *, ...
-            // Пока заглушка:
+            OpType op = n->data.op_data;
+            Node* u   = n->left;
+            Node* v   = n->right;
+
+            // Унарный операции
+            if (op == OP_SIN || op == OP_COS || op == OP_LN) {
+                // TODO: пока заглушка
+                *err = TREE_OK;
+                return NULL;
+            }
+
+            // Бинарные операции
+            Node* u_prime = diff_node(u, result, var_idx, err);  // производная левого поддерева
+            if (*err) return NULL;
+            Node* v_prime = diff_node(v, result, var_idx, err);  // произо=водная правого поддерева
+            if (*err) return NULL;
+
+            if (op == OP_ADD) {
+                // d/dx[u + v] = u' + v'
+                NodeElem d = {.op_data = OP_ADD};
+                Node* add  = NULL;
+                *err       = tree_alloc_node(result, OP_TYPE, d, &add);
+                if (*err) return NULL;
+                add->left  = u_prime;
+                add->right = v_prime;
+                if (u_prime) u_prime->head = add;
+                if (v_prime) v_prime->head = add;
+                return add;
+            }
+
+            if (op == OP_SUB) {
+                // d/dx[u - v] = u' - v'
+                NodeElem d = {.op_data = OP_SUB};
+                Node* sub  = NULL;
+                *err       = tree_alloc_node(result, OP_TYPE, d, &sub);
+                if (*err) return NULL;
+                sub->left  = u_prime;
+                sub->right = v_prime;
+                if (u_prime) u_prime->head = sub;
+                if (v_prime) v_prime->head = sub;
+                return sub;
+            }
+
+            // TODO: Умножение, деление, степень
             *err = TREE_OK;
-            return NULL;  // TODO: команд бы добавить
+            return NULL;
         }
 
         default:
