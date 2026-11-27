@@ -11,7 +11,7 @@
 static Node* new_num(Tree* t, double val, tree_err_t* err) {  // создать числовой узел
     Node* n = NULL;
     *err    = tree_alloc_node(t, NUM_TYPE, (NodeElem){.num_data = val}, &n);
-    if (err) return NULL;
+    if (*err) return NULL;
     return n;
 }
 
@@ -45,37 +45,97 @@ static tree_err_t copy_vartable(const VarTable* src, VarTable* dst) {  // коп
     return TREE_OK;
 }
 
+static Node* new_binop(Tree* t, OpType op, Node* left, Node* right, tree_err_t* err) {  // создать узел бинарной операции
+    if (!left || !right) {
+        *err = TREE_CORRYPTED;
+        return NULL;
+    }
+    Node* n = NULL;
+    *err    = tree_alloc_node(t, OP_TYPE, (NodeElem){.op_data = op}, &n);
+    if (*err) return NULL;
+    n->left     = left;
+    left->head  = n;
+    n->right    = right;
+    right->head = n;
+    return n;
+}
+
+static Node* new_unop(Tree* t, OpType op, Node* arg, tree_err_t* err) {  // создать узел унаной операции
+    if (!arg) {
+        *err = TREE_CORRYPTED;
+        return NULL;
+    }
+    Node* n = NULL;
+    *err    = tree_alloc_node(t, OP_TYPE, (NodeElem){.op_data = op}, &n);
+    if (*err) return NULL;
+    n->right  = arg;
+    arg->head = n;
+    return n;
+}
+
+static Node* new_negate(Tree* t, Node* arg, tree_err_t* err) {
+    return new_unop(t, OP_SUB, arg, err);  // унарный минус = OP_SUB с left = NULL
+}
+
 // функция дифференцирования одного узла
 static Node* diff_node(const Node* n, Tree* result, size_t var_idx, tree_err_t* err) {
     if (!n) return NULL;
 
     switch (n->type) {
+        /* ---- Константа: d/dx[c] = 0 ---- */
         case NUM_TYPE: {
-            NodeElem d = {.num_data = 0.0};
-            Node* n    = NULL;
-            *err       = tree_alloc_node(result, NUM_TYPE, d, &n);
-            if (*err != TREE_OK) return NULL;
-            return n;
+            return new_num(result, 0.0, err);
         }
 
+        /* ---- Переменная: d/dx[x] = 1, d/dx[y] = 0 ---- */
         case VAR_TYPE: {
             double val = (n->data.var_data == var_idx) ? 1.0 : 0.0;
-            NodeElem d = {.num_data = val};
-            Node* n    = NULL;
-            *err       = tree_alloc_node(result, NUM_TYPE, d, &n);
-            return n;  // TODO: dsl ка нужна
+            return new_num(result, val, err);
         }
 
+        /* ---- Операции ---- */
         case OP_TYPE: {
             OpType op = n->data.op_data;
             Node* u   = n->left;
             Node* v   = n->right;
 
-            // Унарный операции
-            if (op == OP_SIN || op == OP_COS || op == OP_LN) {
-                // TODO: пока заглушка
-                *err = TREE_OK;
-                return NULL;
+            /* --- Унарные функции: аргумент в v (right), u == NULL --- */
+            if (op == OP_SIN) {
+                // d/dx[sin(v)] = cos(v) * v'
+                Node* v_prime = diff_node(v, result, var_idx, err);
+                if (*err) return NULL;
+                Node* cos_v = new_unop(result, OP_COS, clone_into(v, result, err), err);
+                if (*err) return NULL;
+                return new_binop(result, OP_MUL, cos_v, v_prime, err);
+            }
+            if (op == OP_COS) {
+                // d/dx[cos(v)] = -sin(v) * v'
+                Node* v_prime = diff_node(v, result, var_idx, err);
+                if (*err) return NULL;
+                Node* sin_v   = new_unop(result, OP_SIN, clone_into(v, result, err), err);
+                Node* neg_sin = new_negate(result, sin_v, err);
+                if (*err) return NULL;
+                return new_binop(result, OP_MUL, neg_sin, v_prime, err);
+            }
+            if (op == OP_LN) {
+                // d/dx[ln(v)] = v' / v
+                Node* v_prime = diff_node(v, result, var_idx, err);
+                if (*err) return NULL;
+                Node* v_copy = clone_into(v, result, err);
+                if (*err) return NULL;
+                return new_binop(result, OP_DIV, v_prime, v_copy, err);
+            }
+
+            /* --- Унарный минус: d/dx[-v] = -v' --- */
+            if (u == NULL && op == OP_SUB) {
+                Node* v_prime = diff_node(v, result, var_idx, err);
+                if (*err) return NULL;
+                return new_negate(result, v_prime, err);
+            }
+
+            /* --- Унарный плюс: d/dx[+v] = v' --- */
+            if (u == NULL && op == OP_ADD) {
+                return diff_node(v, result, var_idx, err);
             }
 
             // Бинарные операции
@@ -86,32 +146,67 @@ static Node* diff_node(const Node* n, Tree* result, size_t var_idx, tree_err_t* 
 
             if (op == OP_ADD) {
                 // d/dx[u + v] = u' + v'
-                NodeElem d = {.op_data = OP_ADD};
-                Node* add  = NULL;
-                *err       = tree_alloc_node(result, OP_TYPE, d, &add);
-                if (*err) return NULL;
-                add->left  = u_prime;
-                add->right = v_prime;
-                if (u_prime) u_prime->head = add;
-                if (v_prime) v_prime->head = add;
-                return add;
+                return new_binop(result, OP_ADD, u_prime, v_prime, err);
             }
 
             if (op == OP_SUB) {
                 // d/dx[u - v] = u' - v'
-                NodeElem d = {.op_data = OP_SUB};
-                Node* sub  = NULL;
-                *err       = tree_alloc_node(result, OP_TYPE, d, &sub);
-                if (*err) return NULL;
-                sub->left  = u_prime;
-                sub->right = v_prime;
-                if (u_prime) u_prime->head = sub;
-                if (v_prime) v_prime->head = sub;
-                return sub;
+                return new_binop(result, OP_SUB, u_prime, v_prime, err);
             }
 
-            // TODO: Умножение, деление, степень
-            *err = TREE_OK;
+            if (op == OP_MUL) {
+                // d/dx[u * v] = u'*v + u*v'
+                Node* term1 = new_binop(result, OP_MUL, u_prime, clone_into(v, result, err), err);
+                if (*err) return NULL;
+                Node* term2 = new_binop(result, OP_MUL, clone_into(u, result, err), v_prime, err);
+                if (*err) return NULL;
+                return new_binop(result, OP_ADD, term1, term2, err);
+            }
+
+            if (op == OP_DIV) {
+                // d/dx[u / v] = (u'*v - u*v') / v^2
+                Node* num1 = new_binop(result, OP_MUL, u_prime, clone_into(v, result, err), err);
+                if (*err) return NULL;
+                Node* num2 = new_binop(result, OP_MUL, clone_into(u, result, err), v_prime, err);
+                if (*err) return NULL;
+                Node* num = new_binop(result, OP_SUB, num1, num2, err);
+                if (*err) return NULL;
+                Node* v2 = new_binop(result, OP_POW, clone_into(v, result, err),
+                                     new_num(result, 2.0, err), err);
+                if (*err) return NULL;
+                return new_binop(result, OP_DIV, num, v2, err);
+            }
+
+            if (op == OP_POW) {
+                // Общий случай: (u^v)' = u^v * (v'*ln(u) + v*u'/u)
+                Node* u_copy = clone_into(u, result, err);
+                if (*err) return NULL;
+                Node* v_copy = clone_into(v, result, err);
+                if (*err) return NULL;
+
+                // v' * ln(u)
+                Node* ln_u = new_unop(result, OP_LN, clone_into(u, result, err), err);
+                if (*err) return NULL;
+                Node* t1 = new_binop(result, OP_MUL, v_prime, ln_u, err);
+                if (*err) return NULL;
+
+                // v * u' / u
+                Node* vu = new_binop(result, OP_MUL, v_copy, u_prime, err);
+                if (*err) return NULL;
+                Node* t2 = new_binop(result, OP_DIV, vu, clone_into(u, result, err), err);
+                if (*err) return NULL;
+
+                // v'*ln(u) + v*u'/u
+                Node* bracket = new_binop(result, OP_ADD, t1, t2, err);
+                if (*err) return NULL;
+
+                // u^v * (...)
+                Node* uv = new_binop(result, OP_POW, u_copy, clone_into(v, result, err), err);
+                if (*err) return NULL;
+                return new_binop(result, OP_MUL, uv, bracket, err);
+            }
+
+            *err = TREE_WRONG_OP_CODE;
             return NULL;
         }
 
