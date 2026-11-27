@@ -117,13 +117,100 @@ static Node* create_new_node(Parser* p, NodeType type, NodeElem data, Node* left
     return n;
 }
 
+static bool find_unary_func(const char* word, OpType* op) {
+    for (int i = 0; i < NUMBER_OF_OPERATIONS; i++)
+        if (op_info[i].max_children == 1 && strcmp(word, op_info[i].operation_ord) == 0) {
+            *op = (OpType)i;
+            return true;
+        }
+    return false;
+}
+
+static Node* parse_expr(Parser* p);
+
+static Node* parse_factor(Parser* p) {
+    skip_ws(p);
+    char c = *p->pos;
+
+    if (c == '(') {  // перед нами выражение в скобочках
+        p->pos++;
+        Node* inner = parse_expr(p);
+        if (!inner) return NULL;
+        skip_ws(p);
+        if (*p->pos != ')') {
+            p->err = TREE_CORRYPTED;
+            tree_node_destroy(inner);
+            return NULL;
+        }
+        p->pos++;
+        return inner;
+    }
+
+    if (isdigit((unsigned char)c) || c == '.') {  // перед нами константа
+        char* end = NULL;
+        double v  = strtod(p->pos, &end);  // как оказалось strtod и числа .5 умеет разбирать
+        if (end == p->pos) {
+            p->err = ERROR_INVALID_NODE_CONTENT;
+            return NULL;
+        }
+        p->pos     = end;
+        NodeElem d = {.num_data = v};
+        return node_new(p, NUM_TYPE, d, NULL, NULL);
+    }
+
+    if (isalpha((unsigned char)c) || c == '_') {  // перед нами должна быть переменная дальше бога нет
+        char word[MAX_VAR_LEN];
+        size_t len = 0;
+        while (isalnum((unsigned char)*p->pos) || *p->pos == '_') {
+            if (len + 1 >= MAX_VAR_LEN) {
+                p->err = TREE_VAR_WRONG_FORMAT;
+                return NULL;
+            }
+            word[len++] = *p->pos++;
+        }
+        word[len] = '\0';
+
+        OpType op;
+        if (find_unary_func(word, &op)) {
+            skip_ws(p);
+            if (*p->pos != '(') {
+                p->err = TREE_CORRYPTED;
+                return NULL;
+            }  // sin/cos/... без ( - ошибка
+            p->pos++;
+            Node* arg = parse_expr(p);
+            if (!arg) return NULL;
+            skip_ws(p);
+            if (*p->pos != ')') {
+                p->err = TREE_CORRYPTED;
+                tree_node_destroy(arg);
+                return NULL;
+            }
+            p->pos++;
+            NodeElem d = {.op_data = op};
+            return node_new(p, OP_TYPE, d, NULL, arg);  // аргумент в right
+        }
+
+        size_t idx = 0;
+        p->err     = var_get_or_add(p->tree->var_table, word, &idx);
+        if (p->err != TREE_OK) return NULL;
+        NodeElem d = {.var_data = idx};
+        return node_new(p, VAR_TYPE, d, NULL, NULL);
+    }
+
+    p->err = ERROR_INVALID_NODE_CONTENT;
+    return NULL;
+}
+
+static Node* parse_unary(Parser* p);
+
 static Node* parse_power(Parser* p) {
     Node* base = parse_factor(p);  // это наше основание степени
     if (!base) return NULL;
     skip_ws(p);
     if (*p->pos != '^') return base;
     p->pos++;
-    Node* _exp = parse_unary(p); // это наща степень и мой любимый мувчик который позволит читать как 2^-2 так и обеспечит правоассоциативность
+    Node* _exp = parse_unary(p);  // это наща степень и мой любимый мувчик который позволит читать как 2^-2 так и обеспечит правоассоциативность
     if (!_exp) {
         tree_node_destroy(base);
         return NULL;
