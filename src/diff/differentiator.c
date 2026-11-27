@@ -117,6 +117,21 @@ static Node* create_new_node(Parser* p, NodeType type, NodeElem data, Node* left
     return n;
 }
 
+static Node* parse_power(Parser* p) {
+    Node* base = parse_factor(p);  // это наше основание степени
+    if (!base) return NULL;
+    skip_ws(p);
+    if (*p->pos != '^') return base;
+    p->pos++;
+    Node* _exp = parse_unary(p); // это наща степень и мой любимый мувчик который позволит читать как 2^-2 так и обеспечит правоассоциативность
+    if (!_exp) {
+        tree_node_destroy(base);
+        return NULL;
+    }
+    NodeElem d = {.op_data = OP_POW};
+    return create_new_node(p, OP_TYPE, d, base, _exp);
+}
+
 static Node* parse_unary(Parser* p) {
     skip_ws(p);
     char c = *p->pos;
@@ -124,9 +139,9 @@ static Node* parse_unary(Parser* p) {
         p->pos++;
         Node* arg = parse_unary(p);
         if (!arg) return NULL;
-        if (c == '+') return arg; // унарный плюс бесполезен и не входит в дерево
+        if (c == '+') return arg;  // унарный плюс бесполезен и не входит в дерево
         NodeElem d = {.op_data = OP_SUB};
-        return create_new_node(p, OP_TYPE, d, NULL, arg); // унарный минус - left = NULL
+        return create_new_node(p, OP_TYPE, d, NULL, arg);  // унарный минус - left = NULL
     }
     return parse_power(p);
 }
