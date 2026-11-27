@@ -89,7 +89,7 @@ static tree_err_t var_get_or_add(VarTable* table, const char* name, size_t* idx)
 
         snprintf(table->vars[table->size].name, (size_t)(MAX_VAR_LEN), name);
         table->vars[table->size].value = VAR_POISON;
-        *idx = table->size;
+        *idx                           = table->size;
         table->size++;
         return TREE_OK;
     }
@@ -97,91 +97,87 @@ static tree_err_t var_get_or_add(VarTable* table, const char* name, size_t* idx)
     return TREE_VAR_WRONG_FORMAT;
 }
 
-static void create_node(Node* n, int key, NodeType type, NodeElem elem_data, Node* head, Node* left, Node* right) {
-    n->key   = key;
+static void create_new_node(Parser* p, NodeType type, NodeElem data, Node* left, Node* right) {
+    Node* n = calloc(q, sizeof(Node));
+    if (!n) {
+        p->err = TREE_NO_MEM;
+        tree_node_destroy(left);
+        tree_node_destroy(right);
+        return NULL;
+    }
+    n->key   = 0;
     n->type  = type;
-    n->data  = elem_data;
+    n->data  = data;
     n->left  = left;
     n->right = right;
-}
-
-/* ----------------------- рекурсивная обработка узлов из файла ----------------------- */
-static tree_err_t diff_nodes_take(char** pos, char* word, Tree* t, Node* node, char** node_data, size_t* tree_size) {
-    ASSERT_MSG(pos != NULL, tree_strerror(NULL_PTR));
-    ASSERT_MSG(word != NULL, tree_strerror(NULL_PTR));
-    ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
-
-    (*pos)++;
-    int c = *pos;  // то есть остановились в прошлый раз на \0 или на (
-    diff_skip_whitespace(pos);
-
-    int len = 0;
-    if (c != '(') {  // значит должна быть операция
-        node_data = pos;
-        while (c != ' ' && c != ')' && c != '(' && c != '\n' && c != '\r' && c != '\t' && c != EOF && len < MAX_NODE_LEN - 1) {
-            word[len++] = (char)c;
-            (*pos)++;
-            c = *pos;
-        }
-        word[len] = '\0';
-        ASSERT_MSG(strcmp("nil", word) == 0, strerror(NILL_MISSING));
-        return;
-    } else {  // перед нами левое поддерево унарной операции или переменная или константа
-        (*pos)++;
-        c = *pos;  // скипнули (
-        diff_skip_whitespace(pos);
-        c = *pos;
-        while (c != ' ' && c != ')' && c != '(' && c != '\n' && c != '\r' && c != '\t' && c != EOF && len < MAX_NODE_LEN - 1) {
-            word[len++] = (char)c;
-            (*pos)++;
-            c = *pos;
-        }
-        word[len] = '\0';
-        diff_skip_whitespace(pos);
-        size_t var_pos;
-        OpType op_type;
-
-        if (is_unary_operation(word)) {  // создание нового узла с правым ребенком и рекурсиный спуск в правое поддерево
-            NodeElem elem_data;
-
-        } else if (ensure_var_exists(word, t->var_table, &var_pos)) {  // создать узел переменную без детей
-            NodeElem elem_data;
-            elem_data.var_data = var_pos;
-            Node* new_node     = calloc(1, sizeof(Node));
-            create_node(new_node, 0, VAR_TYPE, elem_data, node, NULL, NULL);
-            return TREE_OK;
-        } else if (is_const(word)) {  // создать узел кнстанту без детец
-            double constanta = strtod(word, NULL);
-            NodeElem elem_data;
-            elem_data.num_data = constanta;
-            Node* new_node     = calloc(1, sizeof(Node));
-            create_node(new_node, 0, NUM_TYPE, elem_data, node, NULL, NULL);
-            return TREE_OK;
-
-        } else {
-            return ERROR_INVALID_NODE_CONTENT;
-        }
-    }
+    n->head  = NULL;
+    if (left) left->head = n;
+    if (right) right->head = n;
+    p->tree->size++;
+    return n;
 }
 
 tree_err_t diff_read(Tree* t, const char* name) {
-    ASSERT(name != NULL);
-    FILE* in = fopen(name, "r");
-    ASSERT(in != NULL);
-    ASSERT_MSG(getline(t->buffer, t->buf_used, in) > 0, strerror(ERROR_NULL_FILE));
-    fclose(in);
-    if (strlen(t->buffer) > t->buf_cap) t->buf_cap = t->buf_used;
+    if (!t || !name) return TREE_NULL_PTR;
 
-    char** pos = &(t->buffer[0]);
+    FILE* in = fopen(name, "rb");
+    if (!in) return ERROR_NULL_FILE;
 
-    char word[MAX_NODE_LEN];
-    char** node_data = pos;
+    if (fseek(in, 0, SEEK_END) != 0) {
+        fclose(in);
+        return TREE_IO_ERROR;
+    }
+    long sz = ftell(in);
+    if (sz < 0) {
+        fclose(in);
+        return TREE_IO_ERROR;
+    }
+    rewind(in);
+    if (sz == 0) {
+        fclose(in);
+        return ERROR_NULL_FILE;
+    }
+    if ((size_t)sz + 1 > TREE_MAX_BUF_CAP) {
+        fclose(in);
+        return TREE_BUFFER_CORRYPTED;
+    }
 
-    diff_nodes_take(pos, word, t, t->root, node_data, t->size);
+    tree_destroy(t);
+    tree_err_t err = TREE_INIT(t);
+    if (err != TREE_OK) {
+        fclose(in);
+        return err;
+    }
+
+    while ((size_t)sz + 1 > t->buf_cap) {
+        err = resize_up(t);
+        if (err != TREE_OK) {
+            fclose(in);
+            return err;
+        }
+    }  // создаем буфер под файл
+
+    size_t got = fread(t->buffer, 1, (size_t)sz, in);
+    fclose(in);  // принимаем буфер
+
+    t->buf_used = got;
+    memset(t->buffer + got, 0, t->buf_cap - got);  // обнуляем хвост буфера
+
+    Parser p = {.pos = t->buffer, .tree = t, .err = TREE_OK};
+    t->root  = parse_expr(&p);
+
+    if (p.err == TREE_OK) {
+        skip_ws(&p);
+        if (*p.pos != '\0') p.err = TREE_CORRYPTED;
+        if (!t->root) p.err = ERROR_NULL_FILE;
+    }
+    if (p.err != TREE_OK) {
+        tree_node_destroy(t->root);
+        t->root = NULL;
+        t->size = 0;
+        return p.err;
+    }
 
     tree_renumber(t);
-    tree_err_t verify_err = tree_verify(t);
-    ASSERT_MSG(verify_err == TREE_OK, strerror(verify_err));
-
-    return TREE_OK;
+    return tree_verify(t);
 }
