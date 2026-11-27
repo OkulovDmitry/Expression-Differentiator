@@ -24,6 +24,9 @@ int main() {
     printf("tree_diff returned: %d\n", (int)err);
     ASSERT_MSG(err == TREE_OK, tree_strerror(err));
 
+    err = tree_simplify(&t_first_diff);
+    ASSERT_MSG(err == TREE_OK, tree_strerror(err));
+
     tree_dump_graph_at("DERIVATIVE", &t_first_diff, __FILE__, __LINE__, "main");
 
     tree_destroy(&t);
