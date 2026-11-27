@@ -1,0 +1,13 @@
+digraph tree {
+  graph [dpi=110, bgcolor="#1B1F24", splines=true, pad=0.5, nodesep=1.6, ranksep=1.5];
+  node  [shape=rectangle, style="rounded,filled", fontcolor="#E6EDF3", fontsize=22, width=6.2, height=2.5, fixedsize=true, penwidth=3];
+  edge  [penwidth=2, arrowsize=1.0];
+  cell0 [fillcolor="#5e4592", color="#B392F0", label="ROOT\n\key: 0\ndata: 0\nhead: NO_HEAD\nleft_child: NO_LEFT_CHILD\nright_child: NO_RIGHT_CHILD"];
+  cell1 [style="invis", width=1, fixedsize=true];
+  cell2 [style="invis", width=1, fixedsize=true];
+  cell3 [style="invis", width=1, fixedsize=true];
+  cell0:s -> cell1:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:s -> cell2:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  cell0:s -> cell3:n [color="#8B949E", style=invis, weigh=10000, headclip=true];
+  { rank=TB; cell0; }
+}

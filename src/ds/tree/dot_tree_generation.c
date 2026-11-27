@@ -1,6 +1,8 @@
 #include <dot_tree_generation.h>
+#include <string.h>
 
 #include "tree_defs.h"
+#include "tree_ops.h"
 
 /* ------------------------------ построение одной стрелки в dot ------------------------------- */
 static void gv_edge(FILE* o, const char* mode, int from, const char* fport, int to, const char* tport,
@@ -19,7 +21,7 @@ static void gv_edge(FILE* o, const char* mode, int from, const char* fport, int 
 }
 
 /* ----------------------------- построение всех стрелок для текущей ячейки в dot -------------------------- */
-static tree_err_t arrow_dump_graph(const Node* n, int* qur_num, FILE* out) {
+tree_err_t arrow_dump_graph(const Node* n, int* qur_num, FILE* out) {
     if (n == NULL) return TREE_OK;
     if (*qur_num > 4 * MAX_OF_NODES) return TREE_CORRYPTED;
     int parent = (*qur_num)++;
@@ -56,7 +58,7 @@ static tree_err_t arrow_dump_graph(const Node* n, int* qur_num, FILE* out) {
 }
 
 /* --------------------------------------- дамп ячейки в dot ------------------------------------------ */
-tree_err_t node_dump_graph(const Node* n, int* qur_num, FILE* out) {
+tree_err_t node_dump_graph(const Tree* t, const Node* n, int* qur_num, FILE* out) {
     if (n == NULL) return TREE_OK;
     if (*qur_num > 4 * MAX_OF_NODES) return TREE_CORRYPTED;
 
@@ -67,7 +69,7 @@ tree_err_t node_dump_graph(const Node* n, int* qur_num, FILE* out) {
                      " label=\"ROOT\\n\\key: %d",
                 *qur_num, n->key);
         fprintf(out, "\\ndata: ");
-        print_data(out, n);
+        print_data(out, n, t->var_table);
 
     } else {
         int is_free         = (n->type == NON_TYPE);
@@ -76,13 +78,21 @@ tree_err_t node_dump_graph(const Node* n, int* qur_num, FILE* out) {
         if (n->type == NUM_TYPE) snprintf(style, sizeof(style), "rounded");
         if (n->type == VAR_TYPE) snprintf(style, sizeof(style), "ellipse");
         if (n->type == OP_TYPE) snprintf(style, sizeof(style), "triangle");
-        fprintf(out, "  cell%d [fillcolor=\"%s\", color=\"%s\"%s, label=\"key: %d[%d]\\n\\n",
-                *qur_num,
-                is_free ? GV_FREE_FILL : GV_USED_FILL,
-                is_free ? GV_FREE_BORDER : GV_USED_BORDER,
-                is_free ? ", style=\"%s,filled,dashed\"" : "",
-                n->key, number_of_child, style);
-        print_data(out, n);
+        if (is_free) {
+            fprintf(out, "  cell%d [fillcolor=\"%s\", color=\"%s\", style=\"%s,filled,dashed\", label=\"key: %d[%d]\\n\\n",
+                    *qur_num,
+                    GV_FREE_FILL,
+                    GV_FREE_BORDER,
+                    style,
+                    n->key, number_of_child);
+        } else {
+            fprintf(out, "  cell%d [fillcolor=\"%s\", color=\"%s\", label=\"key: %d[%d]\\n\\n",
+                    *qur_num,
+                    GV_USED_FILL,
+                    GV_USED_BORDER,
+                    n->key, number_of_child);
+        }
+        print_data(out, n, t->var_table);
     }
 
     if (n->head != NULL)
@@ -102,11 +112,11 @@ tree_err_t node_dump_graph(const Node* n, int* qur_num, FILE* out) {
     fprintf(out, "\"];\n");
 
     (*qur_num)++;
-    node_dump_graph(n->left, qur_num, out);
+    node_dump_graph(t, n->left, qur_num, out);
     for (int i = 0; i < 3; i++) {
         fprintf(out, "  cell%d [style=\"invis\", width=1, fixedsize=true];\n", *qur_num);  // средний невидимка
         (*qur_num)++;
     }
-    node_dump_graph(n->right, qur_num, out);
+    node_dump_graph(t, n->right, qur_num, out);
     return TREE_OK;
 }

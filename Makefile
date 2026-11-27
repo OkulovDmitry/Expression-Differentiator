@@ -1,41 +1,106 @@
-CC := gcc
-SRC_DIR = src
-OBJ_DIR = obj
-DOT_DIR = dot_of_dumps
-PNG_DIR = png_dumps
-BINPRO_DIR = bin_pograms
-TXT_DIR = txt_dumps
+SHELL := cmd.exe
 
-CFLAGS := -Wall -Wextra -Wshadow -g -O2 -MMD -MP -I$(SRC_DIR)
-LDFLAGS = -O2
+# ============================================================================
+#  Компилятор и флаги
+# ============================================================================
+CC       := gcc
+CFLAGS   := -Wall -Wextra -Wshadow -Wpedantic -g -O2 -MMD -MP
+CFLAGS   += -Iinclude
+CFLAGS   += -Iinclude/common -Iinclude/diff -Iinclude/ds -Iinclude/ds/tree
+LDFLAGS  := -O2
+LDLIBS   := -lm
 
-SRCS = $(wildcard src/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+# ============================================================================
+#  Директории
+# ============================================================================
+SRC_DIR   := src
+INC_DIR   := include
+OBJ_DIR   := obj
+LOGS_DIR  := logs
+DOT_DIR   := $(LOGS_DIR)\dot
+PNG_DIR   := $(LOGS_DIR)\png
+TXT_DIR   := $(LOGS_DIR)\txt
+HTML_DIR  := $(LOGS_DIR)\html
+DATA_DIR  := Differentiator_database
 
-ifeq ($(OS), Windows_NT)
-	TARGET := $(addprefix $(OBJ_DIR)/, akinator.exe)
-	RUN    := ./$(TARGET)
-	RM     := del /Q /F
-else
-	TARGET := $(addprefix $(OBJ_DIR)/, akinator)
-	RUN    := ./$(TARGET)
-	RM     := rm -f
-endif
+# ============================================================================
+#  Поиск исходников (рекурсивно по всем поддиректориям src/)
+# ============================================================================
+SRCS := $(wildcard $(SRC_DIR)/*.c) \
+        $(wildcard $(SRC_DIR)/common/*.c) \
+        $(wildcard $(SRC_DIR)/diff/*.c) \
+        $(wildcard $(SRC_DIR)/ds/*.c) \
+        $(wildcard $(SRC_DIR)/ds/tree/*.c)
 
-all: $(TARGET)
+# Объектные файлы
+OBJS := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+DEPS := $(OBJS:.o=.d)
 
+# ============================================================================
+#  Итоговый бинарник
+# ============================================================================
+TARGET := $(OBJ_DIR)\Differentiator.exe
+
+# ============================================================================
+#  Цели
+# ============================================================================
+.PHONY: all run clean dirs help
+
+all: dirs $(TARGET)
+
+# Создание всех нужных директорий
+# Префикс говорит make игнорировать ошибку если директория уже существует
+dirs:
+	-@mkdir $(OBJ_DIR)
+	-@mkdir $(OBJ_DIR)\common
+	-@mkdir $(OBJ_DIR)\diff
+	-@mkdir $(OBJ_DIR)\ds
+	-@mkdir $(OBJ_DIR)\ds\tree
+	-@mkdir $(LOGS_DIR)
+	-@mkdir $(LOGS_DIR)\dot
+	-@mkdir $(LOGS_DIR)\png
+	-@mkdir $(LOGS_DIR)\txt
+	-@mkdir $(LOGS_DIR)\html
+
+# ============================================================================
+#  Линковка
+# ============================================================================
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ -mconsole
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(SRC_DIR)/tree.h
+# ============================================================================
+#  Компиляция
+#  Префикс перед mkdir игнорирует ошибку директория уже существует
+# ============================================================================
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	-@mkdir $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-run: $(TARGET)
-	./$(TARGET)
+# ============================================================================
+#  Запуск
+# ============================================================================
+run: all
+	$(TARGET)
 
+# ============================================================================
+#  Очистка
+# ============================================================================
 clean:
-	-rd /S /Q bin_programs obj dot_of_dumps png_dumps txt_dumps
-	-$(RM) errors.log log.html
-	mkdir bin_programs obj dot_of_dumps png_dumps txt_dumps
+	-rmdir /S /Q $(OBJ_DIR)
+	-rmdir /S /Q $(LOGS_DIR)
+	-del errors.log 2>nul
 
-.PHONY: all run clean
+# ============================================================================
+#  Автоматические зависимости
+# ============================================================================
+-include $(DEPS)
+
+# ============================================================================
+#  Справка
+# ============================================================================
+help:
+	@echo Доступные цели:
+	@echo   mingw32-make          - собрать проект
+	@echo   mingw32-make run      - собрать и запустить
+	@echo   mingw32-make clean    - удалить obj и logs
+	@echo   mingw32-make help     - показать эту справку

@@ -19,7 +19,10 @@
 #include "stack.h"
 #include "tree_defs.h"
 #include "tree_errors.h"
-
+#include "tree_core.h"
+#include "tree_ops.h"
+#include "my_assert.h"
+#include "tree_validate.h"
 /*============================================================================================================================
   ============================================================================================================================
   ============================================================================================================================
@@ -74,7 +77,7 @@ static tree_err_t infix_node_take(char** pos, char* word, Tree* t, Node** node, 
 
         // Читаем левое поддерево
         Node* left_child = NULL;
-        tree_err_t err   = infix_nodes_take(pos, word, t, &left_child, tree_size);
+        tree_err_t err   = infix_node_take(pos, word, t, &left_child, tree_size);
         if (err != TREE_OK) return err;
 
         skip_whitespace(pos);
@@ -123,7 +126,7 @@ static tree_err_t infix_node_take(char** pos, char* word, Tree* t, Node** node, 
 
         // читаем правое поддерево
         Node* right_child = NULL;
-        err               = infix_nodes_take(pos, word, t, &right_child, tree_size);
+        err               = infix_node_take(pos, word, t, &right_child, tree_size);
         if (err != TREE_OK) {
             free(new_node);
             return err;
@@ -199,11 +202,11 @@ tree_err_t infix_read(Tree* t, const char* name) {
     t->buf_used = got;
     memset(t->buffer + got, 0, t->buf_cap - got);  // зануляем хвост
 
-    char* pos = t->buffer[0];
+    char* pos = &t->buffer[0];
     char word[MAX_NODE_LEN];
     size_t tree_size = 0;
 
-    err = infix_nodes_take(&pos, word, t, &(t->root), &tree_size);
+    err = infix_node_take(&pos, word, t, &(t->root), &tree_size);
     if (err != TREE_OK) {
         tree_node_destroy(t->root);
         t->root = NULL;

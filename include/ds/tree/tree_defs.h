@@ -41,7 +41,7 @@ typedef struct {
     double value;            // в будущем для построения графиков и вычисления производной в точке
 } Variable;
 
-typedef struct {
+typedef struct VarTable {
     Variable* vars;
     size_t size;      // сколько записано переменных
     size_t capacity;  // сколько вмещается переменных

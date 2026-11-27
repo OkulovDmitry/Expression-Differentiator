@@ -18,4 +18,5 @@
 #define GV_FREE_PTR "#D29922"    // указатель  на non_type
 #define GV_BAD "#F85149"         // рассогласование
 
-tree_err_t node_dump_graph(const Node* n, int* qur_num, FILE* out);
+tree_err_t node_dump_graph(const Tree* t, const Node* n, int* qur_num, FILE* out);
+tree_err_t arrow_dump_graph(const Node* n, int* qur_num, FILE* out);

@@ -1,9 +1,13 @@
 #include "tree_core.h"
 
+#include <stdlib.h>
+
+#include "my_assert.h"
 #include "tree_defs.h"
 #include "tree_dump.h"
-#include "tree_validate.h"
+#include "tree_ops.h"
 #include "tree_traverse.h"
+#include "tree_validate.h"
 
 /* ========================================================================================================================= */
 /* ========================================================================================================================= */
@@ -18,6 +22,13 @@
 /* ========================================================================================================================= */
 /* ========================================================================================================================= */
 /* ========================================================================================================================= */
+
+static void destroy_node(Node* n) {
+    if (!n) return;
+    destroy_node(n->left);
+    destroy_node(n->right);
+    free(n);
+}
 
 /* ---- Разрушение узла ---- */
 void tree_node_destroy(Node* n) {
@@ -35,16 +46,15 @@ void fill_poison(Tree* t, size_t from) {
 /* ---- Заполнение части таблицы меток POISON ---- */
 void fill_vartable_poison(VarTable* table, size_t from) {
     ASSERT_MSG(table != NULL, strerror(NULL_PTR));
-    ASSERT_MSG(from >= 0, strerror(TREE_VARS_CORRYPTED));
 
     for (size_t i = from; i < table->capacity; i++) {
-        snprintf((table->vars[i]).name, (size_t)(MAX_VAR_LEN), "POISON%zu", i);
+        snprintf((table->vars[i]).name, (size_t)(MAX_VAR_LEN), "POISON%u", (unsigned int)i);
         (table->vars[i]).value = VAR_POISON;
     }
 }
 
 /* ---- Инициализация дерева ---- */
-void tree_init(Tree* t TREE_PLACE_IN) {
+tree_err_t tree_init(Tree* t TREE_PLACE_IN) {
     if (!t) return TREE_NULL_PTR;
 
     t->root     = NULL;
@@ -103,13 +113,13 @@ void tree_destroy(Tree* t) {
 #ifdef TREE_DEBUG
     t->file     = NULL;
     t->function = NULL;
-    t->line     = NULL;
-    t->name     = 0;
+    t->line     = 0;
+    t->name     = NULL;
 #endif
 }
 
 /* ---- Вставка узла ---- */
-tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
+tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data, Node** out_node) {
     ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
 
     if (type >= NUMBER_OF_TYPES) return TREE_WRONG_NODE_TYPE;
@@ -122,7 +132,7 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
         pp = (key < parent->key) ? &parent->left : &parent->right;
     }
 
-    Node* n = malloc(sizeof(*n));
+    Node* n = calloc(1, sizeof(*n));
     if (!n) return TREE_NO_MEM;
 
     if (type == STRING_TYPE) {
@@ -130,7 +140,10 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
         size_t need     = strlen(src) + 1;
         while (t->buf_used + need > t->buf_cap) {
             tree_err_t err = resize_up(t);
-            if (err != TREE_OK) { free(n); return err; }
+            if (err != TREE_OK) {
+                free(n);
+                return err;
+            }
         }
         char* dst = t->buffer + t->buf_used;
         memcpy(dst, src, need);
@@ -164,6 +177,7 @@ tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data) {
     t->size++;
 
     ASSERT_DUMP(tree_verify(t) == TREE_OK, tree_dump_hook, t);
+    if (out_node) *out_node = n;
     return TREE_OK;
 }
 
@@ -214,7 +228,7 @@ Node* tree_find(const Tree* t, int key) {
 /* ---- Удаление узла ---- */
 tree_err_t tree_remove_node(Tree* t, Node* n) {
     if (!t || !n) return TREE_NULL_PTR;
-    
+
     if (!n->left)
         transplant(t, n, n->right); /* нет детей или только правый */
     else if (!n->right)

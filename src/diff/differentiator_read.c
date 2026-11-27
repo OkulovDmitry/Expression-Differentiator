@@ -1,4 +1,4 @@
-#include "differentiator.h"
+#include "differentiator_read.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -6,10 +6,13 @@
 #include <string.h>
 
 #include "my_assert.h"
+#include "tree_core.h"
 #include "tree_defs.h"
+#include "tree_ops.h"
+#include "tree_traverse.h"
 
 /*
-Принцип работы:
+Принцип работы читалки:
   Парсер юзает рекурсивный спуск, где каждая функция
   отвечает за свой уровень приоритета операций:
   
@@ -155,7 +158,7 @@ static Node* parse_factor(Parser* p) {
         }
         p->pos     = end;
         NodeElem d = {.num_data = v};
-        return node_new(p, NUM_TYPE, d, NULL, NULL);
+        return create_new_node(p, NUM_TYPE, d, NULL, NULL);
     }
 
     if (isalpha((unsigned char)c) || c == '_') {  // перед нами должна быть переменная дальше бога нет
@@ -188,14 +191,14 @@ static Node* parse_factor(Parser* p) {
             }
             p->pos++;
             NodeElem d = {.op_data = op};
-            return node_new(p, OP_TYPE, d, NULL, arg);  // аргумент в right
+            return create_new_node(p, OP_TYPE, d, NULL, arg);  // аргумент в right
         }
 
         size_t idx = 0;
         p->err     = var_get_or_add(p->tree->var_table, word, &idx);
         if (p->err != TREE_OK) return NULL;
         NodeElem d = {.var_data = idx};
-        return node_new(p, VAR_TYPE, d, NULL, NULL);
+        return create_new_node(p, VAR_TYPE, d, NULL, NULL);
     }
 
     p->err = ERROR_INVALID_NODE_CONTENT;

@@ -1,6 +1,7 @@
 #include "tree_ops.h"
 
 #include "tree_defs.h"
+#include "my_assert.h"
 
 const OpInfo op_info[NUMBER_OF_OPERATIONS] = {
     {.operation_ord = "+", .operation_tex = "+", .priority = 1, .min_children = 1, .max_children = 2},
@@ -12,6 +13,19 @@ const OpInfo op_info[NUMBER_OF_OPERATIONS] = {
     {.operation_ord = "ln", .operation_tex = "\\ln", .priority = 4, .min_children = 1, .max_children = 1},
     {.operation_ord = "^", .operation_tex = "^", .priority = 3, .min_children = 2, .max_children = 2},
 };
+
+static void renumber_node(Node* n, int* counter) {
+    if (!n) return;
+    renumber_node(n->left, counter);
+    n->key = (*counter)++;
+    renumber_node(n->right, counter);
+}
+
+void tree_renumber(Tree* t) {
+    ASSERT(t != NULL);
+    int counter = 0;
+    renumber_node(t->root, &counter);
+}
 
 /* заменяет поддерево u поддеревом v */
 void transplant(Tree* t, Node* u, Node* v) {
@@ -47,7 +61,8 @@ void print_data(FILE* o, const Node* n, const VarTable* table) {
             fprintf(o, "%s", (table && n->data.var_data < table->size) ? table->vars[n->data.var_data].name : "(null)");
             break;
         case OP_TYPE:
-            printf_op_data(o, "%s", op_info[n->data.op_data].operation_ord);
+            fprintf(o, "%s", op_info[n->data.op_data].operation_ord);
+            break;
         default:
             fprintf(o, "POISON");
             break;

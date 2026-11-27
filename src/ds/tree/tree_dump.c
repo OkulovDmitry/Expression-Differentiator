@@ -1,59 +1,35 @@
 #include <stdio.h>
 #include <tree_dump.h>
 
-#include "tree_defs.h"
 #include "dot_tree_generation.h"
+#include "my_assert.h"
+#include "tree_defs.h"
+#include "tree_ops.h"
+
+/* ----------------------- заменяет спец. символы html на безопасные текстовые коды - html-сущности ------------------------*/
+static void html_escape(FILE* o, const char* s) {
+    for (; *s; s++) {
+        switch (*s) {
+            case '&':
+                fputs("&amp;", o);
+                break;
+            case '<':
+                fputs("&lt;", o);
+                break;
+            case '>':
+                fputs("&gt;", o);
+                break;
+            default:
+                fputc(*s, o);
+        }
+    }
+}
 
 /* ------------------------ выбор функции дампа при падении assert -------------------- */
 void tree_dump_hook(const char* name, void* ctx) {
     tree_dump_graph(name, (const Tree*)ctx);
 }
 
-/* ---------- дамп узла в обычный .txt файл --------- */
-static void rpn_dump_node(FILE* o, const Node* n, size_t* budget) {
-    if (!n) {
-        fputs("nil", o);
-        return;
-    }
-
-    if (*budget == 0) { /* цикл или битый size */
-        fputs("...", o);
-        return;
-    }
-    (*budget)--;
-
-    fputc('(', o);
-    dump_node(o, n->left, budget);
-    fputc(' ', o);
-    dump_node(o, n->right, budget);
-    fprintf(o, " \"");
-    print_data(o, n);
-    fprintf(o, "\"");
-    fprintf(o, ")");
-}
-
-/* -------------------- дамп дерева в .txt ----------------- */
-void rpn_tree_dump(const char* name, const Tree* t) {
-    ASSERT_MSG(name != NULL, tree_strerror(NULL_PTR));
-    ASSERT_MSG(t != NULL, tree_strerror(TREE_NULL_PTR));
-
-    FILE* o;
-    if (strcmp(name, "stderr") == 0) {
-        o = stderr;
-    } else if (strcmp(name, "stdout") == 0) {
-        o = stdout;
-    } else {
-        o = fopen(name, "w");
-        ASSERT_MSG(o != NULL, tree_strerror(NULL_PTR));
-    }
-
-    size_t budget = t->size;
-    //fprintf(o, "tree(size = %zu): ", t->size);
-    dump_node(o, t->root, &budget);
-    fputc('\n', o);
-
-    if (o != stderr && o != stdout) fclose(o);
-}
 
 /* ---------------------------------------- дамп дерева в html с записью позиции где произошел вызов -------------------------------------*/
 tree_err_t tree_dump_graph_at(const char* base_name, const Tree* tree,
@@ -61,7 +37,7 @@ tree_err_t tree_dump_graph_at(const char* base_name, const Tree* tree,
     if (tree == NULL || base_name == NULL) return TREE_NULL_PTR;
 
     char dot[256], png[256];
-    snprintf(dot, sizeof(dot), "./logs/ot/%s_ortho.dot", base_name);
+    snprintf(dot, sizeof(dot), "./logs/dot/%s_ortho.dot", base_name);
     snprintf(png, sizeof(png), "./logs/img/%s_ortho.png", base_name);
     tree_err_t err;
 
@@ -114,7 +90,7 @@ tree_err_t tree_dump_graph_at(const char* base_name, const Tree* tree,
                 "<td class=\"var-name\">Key of root:</td><td class=\"var-val\">%d</td>"
                 "<td class=\"var-name\">Data of root:</td><td class=\"var-val\">",
                 tree->size, tree->root->key);
-        print_data(log_file, tree->root);
+        print_data(log_file, tree->root, tree->var_table);
         fprintf(log_file, "</td>");
         if (tree->root->left != NULL) {
             fprintf(log_file,
@@ -148,7 +124,7 @@ tree_err_t tree_dump_graph_at(const char* base_name, const Tree* tree,
 
     // ============================== ячейки ==========================
     int qur_num = 0;
-    err         = node_dump_graph(tree->root, &qur_num, out);
+    err         = node_dump_graph(tree, tree->root, &qur_num, out);
     ASSERT(err == TREE_OK);
 
     // =========================== стрелки ============================
@@ -182,25 +158,6 @@ tree_err_t tree_dump_graph_at(const char* base_name, const Tree* tree,
     fclose(log_file);
 
     return TREE_OK;
-}
-
-/* ----------------------- заменяет спец. символы html на безопасные текстовые коды - html-сущности ------------------------*/
-static void html_escape(FILE* o, const char* s) {
-    for (; *s; s++) {
-        switch (*s) {
-            case '&':
-                fputs("&amp;", o);
-                break;
-            case '<':
-                fputs("&lt;", o);
-                break;
-            case '>':
-                fputs("&gt;", o);
-                break;
-            default:
-                fputc(*s, o);
-        }
-    }
 }
 
 /* -------------------------- генерация заголовка html файла ------------------------------*/

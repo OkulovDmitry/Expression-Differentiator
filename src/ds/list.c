@@ -388,7 +388,7 @@ list_err_t list_dump(const list_t* list, FILE* out) {
         if (list->data[i] == LIST_POISON)
             fprintf(out, "POISON ");
         else
-            fprintf(out, LIST_ELEM_FMT, list->data[i]);
+            fprintf(out, LIST_ELEM_FMT, (void*)list->data[i]);
     }
 
     fprintf(out, "\n  next: ");
@@ -401,7 +401,7 @@ list_err_t list_dump(const list_t* list, FILE* out) {
     fprintf(out, "  order:");
     int cur = list->next[0];
     for (int steps = 0; steps < list->capacity && cur > 0 && cur < list->capacity; steps++) {
-        fprintf(out, " " LIST_ELEM_FMT "(%d)", list->data[cur], cur);
+        fprintf(out, " " LIST_ELEM_FMT "(%d)", (void*)list->data[cur], cur);
         cur = list->next[cur];
     }
 
@@ -684,7 +684,7 @@ list_err_t list_dump_graph(const list_t* list, const char* dot_name, const char*
                     is_free ? GV_FREE_FILL : GV_USED_FILL,
                     is_free ? GV_FREE_BORDER : GV_USED_BORDER,
                     is_free ? ", style=\"rounded,filled,dashed\"" : "",
-                    i, tag, list->data[i], list->next[i], list->prev[i]);
+                    i, tag, (void*)list->data[i], list->next[i], list->prev[i]);
         } else {
             fprintf(out, "  cell%d [fillcolor=\"%s\", color=\"%s\"%s, label=\"idx: %d%s\\n\\n%s\\nnxt: %d\\nprv: %d\"];\n",
                     i,

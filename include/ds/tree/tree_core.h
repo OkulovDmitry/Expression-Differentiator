@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 #include "tree_errors.h"
 #include "tree_fwd.h"
 
@@ -26,7 +28,9 @@ tree_err_t resize_up(Tree* t);
 Node* tree_min(Node* n);
 
 /* ---- вставка/удаление узла за O(n) ---- */
-tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data);
+tree_err_t tree_insert(Tree* t, int key, int type, NodeElem data, Node** out_node);
 Node* tree_find(const Tree* t, int key);
 tree_err_t tree_remove_node(Tree* t, Node* n);
 tree_err_t tree_remove(Tree* t, int key);
+
+void fill_vartable_poison(VarTable* table, size_t from);
