@@ -1,11 +1,19 @@
 #include "differentiator.h"
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "my_assert.h"
+#include "tree_defs.h"
+
 /*
 Принцип работы:
   Парсер юзает рекурсивный спуск, где каждая функция
   отвечает за свой уровень приоритета операций:
   
-    parse_expr()   - обрабатывает + и - (низший приоритет,
+    parse_expr()   - обрабатывает + и - (низший приоритет, левоассоциативность
     вся формула целиком как сумма или разность отдельных слагаемых - A + B - C)
 
     parse_term()   - обрабатывает * и / (средний приоритет,
@@ -15,6 +23,9 @@
 
     parse_power()  - возведение в степень которое вычисляется раньше умножения и деления (высший приоритет, правоассоциативность)
     parse_factor() - обрабатывает числа, переменные, функции, скобки - вообщем как бы неделимые части
+
+    По сути unary над power чтобы -x^2 дало -(x^2), а не (-x)^2
+    А вpower справа unary чтобы работало 2^-3
   
     Когда парсер видит "x^2 + sin(x) - 1", он:
     1. Вызывает parse_expr() -> тот вызывает parse_term()
@@ -29,16 +40,15 @@
     Как итог - скобки нужны только для явного изменения порядка
 */
 
-#include "my_assert.h"
-#include "tree_defs.h"
+typedef struct {
+    char* pos;  // текущая позиция в t->buffer
+    Tree* tree;
+    tree_err_t err;  // первая возникшая ошибка
+} Parser;
 
-static void diff_skip_whitespace(char** pos) {
-    int c = *pos;
-
-    while (c == ' ' || c == '\n' || c == '\r' || c == '\t') {
-        (*pos)++;
-        c = *pos;
-    }
+static void skip_ws(Parser* p) {
+    while (*p->pos == ' ' || *p->pos == '\n' || *p->pos == '\r' || *p->pos == '\t')
+        p->pos++;
 }
 
 static bool is_unary_operation(char* op) {
