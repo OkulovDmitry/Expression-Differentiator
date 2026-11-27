@@ -117,19 +117,57 @@ static Node* create_new_node(Parser* p, NodeType type, NodeElem data, Node* left
     return n;
 }
 
+static Node* parse_unary(Parser* p) {
+    skip_ws(p);
+    char c = *p->pos;
+    if (c == '+' || c == '-') {
+        p->pos++;
+        Node* arg = parse_unary(p);
+        if (!arg) return NULL;
+        if (c == '+') return arg; // унарный плюс бесполезен и не входит в дерево
+        NodeElem d = {.op_data = OP_SUB};
+        return create_new_node(p, OP_TYPE, d, NULL, arg); // унарный минус - left = NULL
+    }
+    return parse_power(p);
+}
+
+static Node* parse_term(Parser* p) {
+    Node* left = parse_unary(p);
+    if (!left) return NULL;
+
+    while (true) {
+        skip_ws(p);
+        char c = *p->pos;
+        if (c != '*' && c != '/') break;
+        p->pos++;
+        Node* right = parse_unary(p);
+        if (!right) {
+            tree_node_destroy(left);
+            return NULL;
+        }
+        NodeElem d = {.op_data = (c == '*') ? OP_MUL : OP_DIV};
+        left       = create_new_node(p, OP_TYPE, d, left, right);
+        if (!left) return NULL;
+    }
+    return left;
+}
+
 static Node* parse_expr(Parser* p) {
     Node* left = parse_term(p);
     if (!left) return NULL;
 
-    while(true) {
+    while (true) {
         skip_ws(p);
         char c = *p->pos;
-        if ( c != '-' && c != '+') break;
+        if (c != '-' && c != '+') break;
         p->pos++;
         Node* right = parse_term(p);
-        if (!right) { tree_node_destroy(left); return NULL; }
-        NodeElem d = { .op_data = (c == '+') ? OP_ADD : OP_SUB};
-        left = create_new_node(p, OP_TYPE, d, left, right);
+        if (!right) {
+            tree_node_destroy(left);
+            return NULL;
+        }
+        NodeElem d = {.op_data = (c == '+') ? OP_ADD : OP_SUB};
+        left       = create_new_node(p, OP_TYPE, d, left, right);
         if (!left) return NULL;
     }
     return left;
