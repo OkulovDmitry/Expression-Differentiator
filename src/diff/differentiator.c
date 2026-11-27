@@ -51,15 +51,6 @@ static void skip_ws(Parser* p) {
         p->pos++;
 }
 
-static bool is_unary_operation(char* op) {
-    ASSERT_MSG(op != NULL, tree_strerror(NULL_PTR));
-
-    for (int i = 0; i < NUMBER_OF_OPERATIONS; i++) {
-        if (!strcmp(op, op_info[i].operation_ord) && op_info[i].is_unary) return true;
-    }
-    return false;
-}
-
 /* ----- var_name_ok - проверяет валидность имени переменной ----- */
 // имя начинается на _ или букву, далее буквы и цифры и _
 static bool var_name_ok(const char* name) {
@@ -72,54 +63,38 @@ static bool var_name_ok(const char* name) {
     return true;
 }
 
-static tree_err_t resize_up_var_table(VarTable* table) {
-    ASSERT_MSG(table != NULL, strerror(NULL_PTR));
-
-    size_t new_cap = 2 * table->capacity + 1;
-    if (new_cap > MAX_VARS) return TREE_VARS_OVERFLOW;
-
-    VarTable* temp = realloc(table->vars, new_cap);
-    if (temp == NULL) return TREE_VARS_OVERFLOW;
-
-    table->vars     = temp;
-    table->capacity = new_cap;
-
-    fill_vartable_poison(table, table->size);
-
-    return TREE_OK;
-}
-
-static bool ensure_var_exists(const char* var, VarTable* table, size_t* var_pos) {
-    ASSERT_MSG(var != NULL, tree_strerror(NULL_PTR));
-    ASSERT_MSG(table != NULL, tree_strerror(NULL_PTR));
+static tree_err_t var_get_or_add(VarTable* table, const char* name, size_t* idx) {
+    if (!table || !name || !idx) return TREE_NULL_PTR;
 
     for (size_t i = 0; i < table->size; i++) {
-        if (!strcmp(var, (table->vars[i]).name)) {  // переменная уже существует в таблице переменных
-            var_pos = i;
-            return true;
+        if (strcmp(name, (table->vars[i]).name) == 0) {  // переменная уже существует в таблице переменных
+            *idx = i = i;
+            return TREE_OK;
         }
     }
-    if (var_name_ok(var)) {  // переменная не существует но ее имя подразумевает новую переменную в VarTable
-        if (table->size == table->capacity) {
-            tree_err_t err = resize_up_var_table(table);
-            if (err != TREE_OK) return err;
+
+    if (strlen(name) >= MAX_VAR_LEN) return TREE_VAR_WRONG_FORMAT;
+
+    if (var_name_ok(name)) {  // переменная не существует но ее имя подразумевает новую переменную в VarTable
+        if (table->size >= table->capacity) {
+            size_t new_cap = table->capacity * 2 + 1;
+            if (new_cap > MAX_VARS) new_cap = MAX_VARS;
+            if (new_cap <= table->capacity) return TREE_VARS_OVERFLOW;
+            Variable* tmp = realloc(table->vars, new_cap * sizeof(Variable));
+            if (!tmp) return TREE_NO_MEM;
+            table->vars     = tmp;
+            table->capacity = new_cap;
+            fill_vartable_poison(table, table->size);
         }
 
-        snprintf(table->vars[table->size].name, (size_t)(MAX_VAR_LEN), var);
-        var_pos = table->size;
+        snprintf(table->vars[table->size].name, (size_t)(MAX_VAR_LEN), name);
+        table->vars[table->size].value = VAR_POISON;
+        *idx = table->size;
         table->size++;
-        return true;
+        return TREE_OK;
     }
 
-    return false;
-}
-
-// первым может идти + или -, далее только цифры
-static bool is_const(const char* word) {
-    char* endptr;
-    double constanta = strtod(word, &endptr);
-    if (endptr != '\0') return false;
-    return true;
+    return TREE_VAR_WRONG_FORMAT;
 }
 
 static void create_node(Node* n, int key, NodeType type, NodeElem elem_data, Node* head, Node* left, Node* right) {
