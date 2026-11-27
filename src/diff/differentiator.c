@@ -97,8 +97,8 @@ static tree_err_t var_get_or_add(VarTable* table, const char* name, size_t* idx)
     return TREE_VAR_WRONG_FORMAT;
 }
 
-static void create_new_node(Parser* p, NodeType type, NodeElem data, Node* left, Node* right) {
-    Node* n = calloc(q, sizeof(Node));
+static Node* create_new_node(Parser* p, NodeType type, NodeElem data, Node* left, Node* right) {
+    Node* n = calloc(1, sizeof(Node));
     if (!n) {
         p->err = TREE_NO_MEM;
         tree_node_destroy(left);
@@ -115,6 +115,24 @@ static void create_new_node(Parser* p, NodeType type, NodeElem data, Node* left,
     if (right) right->head = n;
     p->tree->size++;
     return n;
+}
+
+static Node* parse_expr(Parser* p) {
+    Node* left = parse_term(p);
+    if (!left) return NULL;
+
+    while(true) {
+        skip_ws(p);
+        char c = *p->pos;
+        if ( c != '-' && c != '+') break;
+        p->pos++;
+        Node* right = parse_term(p);
+        if (!right) { tree_node_destroy(left); return NULL; }
+        NodeElem d = { .op_data = (c == '+') ? OP_ADD : OP_SUB};
+        left = create_new_node(p, OP_TYPE, d, left, right);
+        if (!left) return NULL;
+    }
+    return left;
 }
 
 tree_err_t diff_read(Tree* t, const char* name) {
